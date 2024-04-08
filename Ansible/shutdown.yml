@@ -1,0 +1,7 @@
+---
+  - name: first
+    hosts: SAP:linux
+    tasks:
+
+      - name: Shutdown
+        command: sudo shutdown now

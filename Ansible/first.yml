@@ -1,0 +1,23 @@
+---
+  - name: first
+    hosts: linux
+    tasks:
+
+      - name: Update package cache
+        apt: 
+          update_cache: yes
+        become: true
+        become_user: root
+
+      - name: Upgrade package cache
+        apt: 
+          upgrade: yes
+        become: true
+        become_user: root
+
+      - name: ensure nano is there
+        apt:
+          name: nano
+          state: latest
+        become: true
+        become_user: root

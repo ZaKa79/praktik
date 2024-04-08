@@ -1,0 +1,29 @@
+---
+- name: Deploy SLES 12 instance on GCP
+  hosts: localhost
+  gather_facts: no
+  vars:
+    project: hive-415108
+    auth_kind: serviceaccount
+    service_account_file: /etc/ansible/terraform_gcp.json
+    gcp_zone: europe-west1-b
+
+  tasks:
+    - name: Create SLES 12 instance
+      gcp_compute_instance:
+        name: sles12-instance
+        machine_type: "{{ gcp_zone }}/machineTypes/n1-standard-1"
+        disks:
+          - boot: true
+            initialize_params:
+              image: projects/suse-cloud/global/images/family/sles-12
+        network_interfaces:
+          - network: global/networks/default
+        service_account_file: "/etc/ansible/terraform_gcp.json"
+        project: "first"
+        zone: "{{ gcp_zone }}"
+      register: instance_created
+
+    - name: Print instance information
+      debug:
+        var: instance_created.instance

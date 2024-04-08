@@ -1,0 +1,70 @@
+- hosts: SAP
+  become: true
+  become_user: root
+  vars:
+    saptune_parameter_set: false
+  tasks:
+    # Set timezone
+    - name: Setting timezone
+      command: timedatectl set-timezone Europe/Copenhagen
+      
+    # Install requered software
+    - name: Update all packages on OpenSUSE/SUSE Linux
+      zypper:
+        name: '*'
+        state: latest
+
+    - name: Install prerequisite software libatomic1
+      zypper:
+        name: libatomic1
+        state: present
+
+    - name: Install prerequisite software saptune
+      zypper:
+        name: saptune
+        state: present
+    
+    # Setting up saptune
+    - name: Check if saptune solution is applied or not
+      shell: "saptune solution enabled | grep -xi S4HANA-APP+DB"
+      register: saptune_status
+      ignore_errors: true
+
+    - name: Tune SLES for SAP S4HANA-APP+DB
+      shell: |
+        saptune revert all
+        saptune solution apply S4HANA-APP+DB
+        saptune service enablestart
+      when: saptune_status.rc != 0
+    
+    - name: Activate SLES tuning for SAP 
+      command: "saptune service takeover"
+
+    - name: Check for saptune installation and enablement
+      command: saptune_check
+      register: saptune_check_log
+      ignore_errors: true
+
+    - name: Error corection if saptune is failing
+      command: systemctl reset-failed
+      when: saptune_check_log.rc != 0
+
+    - name: Debug fail if saptune is not setup correctly
+      debug:
+        msg: "Saptune may not be setup correctly, please verify and perform corrective action"
+      when: saptune_check_log.rc != 0
+
+    # Check if reboot is requered
+    - name: Check if a reboot is needed on all SUSE based servers
+      register: linux_reboot_required_file
+      stat: path=/boot/do_purge_kernels get_md5=no
+      
+    - name: Reboot the SUSE/OpenSUSE box if kernel updated
+      reboot:
+        msg: "Reboot initiated by Ansible for kernel updates"
+        connect_timeout: 5
+        reboot_timeout: 300
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: uptime
+      when: linux_reboot_required_file.stat.exists
