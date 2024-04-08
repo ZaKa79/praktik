@@ -1,0 +1,10 @@
+Resources
+| where type == "microsoft.compute/virtualmachines"
+| extend vmType = tostring(properties.hardwareProfile.vmSize), 
+         vmSize = tostring(properties.hardwareProfile.vmSize), 
+         osType = tostring(properties.storageProfile.osDisk.osType), 
+         diskSize = toint(properties.storageProfile.osDisk.diskSizeGB)
+| extend cpuCount = properties.hardwareProfile.vmSize
+| extend ramSizeGB = properties.hardwareProfile.vmSize
+| extend powerstate = tostring( properties.extended.instanceView.powerState.displayStatus)
+| project name, location, resourceGroup, vmType, vmSize, diskSize, osType, cpuCount, ramSizeGB, powerstate
